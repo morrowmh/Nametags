@@ -3,7 +3,7 @@ import toml
 import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
-from collections import defaultdict
+from configdict import configdict
 from dotenv import load_dotenv
 
 bot = discord.Bot()
@@ -23,10 +23,10 @@ DEFAULT_CONFIG = {
 }
 
 @bot.event
-async def on_ready() -> None:
+async def on_ready():
     print(f"Ready! Logged in as {bot.user}")
 
-def initialize() -> None:
+def initialize():
     print("Reading configuration file")
     try:
         config_file = open("config.toml", "r")
@@ -36,14 +36,17 @@ def initialize() -> None:
     else:
         with config_file:
             config = toml.load(config_file)
+
+            # Handle missing keys
+            config = configdict(DEFAULT_CONFIG)
     
     # Configure logging
-    logger.setLevel(config["logging"]["base_level"])
+    logger.setLevel(str(config["logging"]["base_level"]))
     formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     
     if not config["logging"]["disable_file_logging"]:
         # Ensure directory exists
-        log_file = config["logging"]["file"]
+        log_file = str(config["logging"]["file"])
         os.makedirs(os.path.dirname(log_file), exist_ok=True)
 
         print("Enabling file logging with " + log_file)
@@ -58,7 +61,7 @@ def initialize() -> None:
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-def main() -> None:
+def main():
     print(NAMETAGES_BOT_TITLE)
     print("\nInitializing...")
     initialize()
