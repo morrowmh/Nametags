@@ -1,0 +1,8 @@
+# Nametags bot configuration file
+
+[logging]
+base_level = "INFO"
+file = "logs/bot.log"
+backup_count = 50
+disable_file_logging = false
+disable_console_logging = false
