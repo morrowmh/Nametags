@@ -1,9 +1,9 @@
 import discord
 import toml
+import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from collections import defaultdict
-from os import getenv
 from dotenv import load_dotenv
 
 bot = discord.Bot()
@@ -42,8 +42,13 @@ def initialize() -> None:
     formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     
     if not config["logging"]["disable_file_logging"]:
-        print("Enabling file logging with " + config["logging"]["file"])
-        file_handler = TimedRotatingFileHandler(config["logging"]["file"], backupCount=config["logging"]["backup_count"], when="midnight", interval=1)
+        # Ensure directory exists
+        log_file = config["logging"]["file"]
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+
+        print("Enabling file logging with " + log_file)
+
+        file_handler = TimedRotatingFileHandler(log_file, backupCount=config["logging"]["backup_count"], when="midnight", interval=1)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     
@@ -55,12 +60,12 @@ def initialize() -> None:
 
 def main() -> None:
     print(NAMETAGES_BOT_TITLE)
-    print("Initializing...")
+    print("\nInitializing...")
     initialize()
 
-    print("Starting bot...")
+    print("\nStarting bot...")
     load_dotenv()
-    bot.run(getenv("TOKEN"))
+    bot.run(os.getenv("TOKEN"))
 
 if __name__ == "__main__":
     main()
