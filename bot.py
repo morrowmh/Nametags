@@ -1,17 +1,18 @@
 import discord
-import toml
 import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
-from configdict import configdict
 from dotenv import load_dotenv
+from configtools import read_config
 
 bot = discord.Bot()
 logger = logging.getLogger(__name__)
+config = {}
 
 # Constants
-NAMETAGES_BOT_TITLE = "Nametags Discord Bot v1.0.0"
-DEFAULT_CONFIG = {
+NAMETAGS_BOT_TITLE = "Nametags Discord Bot v1.0.0"
+NAMETAGS_CONFIG_FILE = "config.toml"
+NAMETAGS_DEFAULT_CONFIG = {
     "logging": {
         "base_level": "INFO",
         "file": "logs/bot.log",
@@ -24,24 +25,13 @@ DEFAULT_CONFIG = {
 
 @bot.event
 async def on_ready():
-    print(f"Ready! Logged in as {bot.user}")
+    logger.info(f"Ready! Logged in as {bot.user}")
 
 def initialize():
-    print("Reading configuration file")
-    try:
-        config_file = open("config.toml", "r")
-    except FileNotFoundError:
-        print("config.toml not found, falling back to defaults")
-        config = DEFAULT_CONFIG
-    else:
-        with config_file:
-            config = toml.load(config_file)
+    config = read_config(NAMETAGS_CONFIG_FILE, NAMETAGS_DEFAULT_CONFIG)
 
-            # Handle missing keys
-            config = configdict(DEFAULT_CONFIG)
-    
     # Configure logging
-    logger.setLevel(str(config["logging"]["base_level"]))
+    logger.setLevel(config["logging"]["base_level"])
     formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     
     if not config["logging"]["disable_file_logging"]:
@@ -62,7 +52,7 @@ def initialize():
         logger.addHandler(console_handler)
 
 def main():
-    print(NAMETAGES_BOT_TITLE)
+    print(NAMETAGS_BOT_TITLE)
     print("\nInitializing...")
     initialize()
 
