@@ -1,4 +1,6 @@
-# Nametags bot configuration file
+[bot]
+name = "Nametags Discord Bot"
+version = "1.0.0"
 
 [logging]
 base_level = "INFO"
