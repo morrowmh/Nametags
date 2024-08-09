@@ -30,29 +30,29 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
 
     # Validate user input
     try:
-        nci = int(nametags_channel_id)
+        nametags_channel_id = int(nametags_channel_id)
     except Exception:
         await ctx.respond("Error: specified nametags_channel_id is invalid!")
         return
     
     try:
-        cci = int(commands_channel_id)
+        commands_channel_id = int(commands_channel_id)
     except Exception:
         await ctx.respond("Error: specified commands_channel_id is invalid!")
 
-    nc = ctx.author.guild.get_channel(nci)
-    cc = ctx.author.guild.get_channel(cci)
-    if nc is None:
+    nametags_channel = ctx.author.guild.get_channel(nametags_channel_id)
+    commands_channel = ctx.author.guild.get_channel(commands_channel_id)
+    if nametags_channel is None:
         await ctx.respond("Error: specified nametags_channel_id is not a valid channel!")
         return
     
-    if commands_channel_id != -1 and cc is None:
+    if commands_channel_id != -1 and commands_channel is None:
         await ctx.respond("Error: specified commands_channel_id is not a valid channel!")
         return
     
     # TODO: Save config data
     
-    await ctx.respond(f"Set nametags channel to {nc.name} and commands channel to {"GLOBAL" if cc is None else cc.name}")
+    await ctx.respond(f"Set nametags channel to {nametags_channel.name} and commands channel to {"GLOBAL" if commands_channel_id is None else commands_channel.name}")
 
 @bot.event
 async def on_ready() -> None:
