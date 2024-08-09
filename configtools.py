@@ -1,10 +1,11 @@
 import toml
 from logging import Logger
+from typing import Any
 
 def exception(msg: str, e: Exception, logger: Logger=None) -> None:
     print("ERROR:", msg, "\nException:" + str(e)) if logger is None else logger.error(msg, exc_info=e)
 
-def read_config(file: str, default_config: dict, logger: Logger=None) -> dict:
+def read_config(file: str, default_config: dict[str, Any], logger: Logger=None) -> dict[str, Any]:
     try:
         with open(file, "r") as config_file:
             config = toml.load(config_file)

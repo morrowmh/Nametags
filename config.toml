@@ -4,8 +4,6 @@ version = "1.0.0"
 
 [logging]
 base_level = "INFO"
-file = "logs/bot.log"
-rotate_daily = true
-backup_count = 50
+logfile_backup_count = 50
 disable_file_logging = false
 disable_console_logging = false

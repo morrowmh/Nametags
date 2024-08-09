@@ -15,21 +15,30 @@ async def on_ready() -> None:
 
 def load_configs() -> None:
     global bot_config
-    bot_config = read_config(constants.DEFAULT_BOT_CONFIG_FILENAME, constants.DEFAULT_BOT_CONFIG)
+    bot_config = read_config("config.toml", constants.DEFAULT_BOT_CONFIG)
+
+    global guild_configs
+    guild_configs = {}
+
+    # Ensure guilds directory exists
+    os.makedirs("guilds", exist_ok=True)
+
+    # Load each guild config
+    for guild_dir in os.listdir("guilds"):
+        guild_configs[guild_dir] = read_config("guilds/" + guild_dir + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
 
 def setup_logging() -> None:
     logger.setLevel(bot_config["logging"]["base_level"])
     formatter = logging.Formatter("%(asctime)s :: %(levelname)s :: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     
     if not bot_config["logging"]["disable_file_logging"]:
-        # Ensure directory exists
-        log_file = bot_config["logging"]["file"]
-        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        # Ensure logs directory exists
+        os.makedirs("logs", exist_ok=True)
 
-        print("Enabling file logging with " + log_file)
+        print("Enabling file logging")
 
         # Daily logfile rotation
-        file_handler = TimedRotatingFileHandler(log_file, backupCount=bot_config["logging"]["backup_count"], when="midnight", interval=1)
+        file_handler = TimedRotatingFileHandler("logs/bot.log", backupCount=bot_config["logging"]["logfile_backup_count"], when="midnight", interval=1)
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     

@@ -1,4 +1,3 @@
-DEFAULT_BOT_CONFIG_FILENAME = "config.toml"
 DEFAULT_BOT_CONFIG = {
     "bot": {
         "name": "Nametags Discord Bot",
@@ -7,10 +6,13 @@ DEFAULT_BOT_CONFIG = {
 
     "logging": {
         "base_level": "INFO",
-        "file": "logs/bot.log",
-        "rotate_daily": True,
-        "backup_count": 50,
+        "logfile_backup_count": 50,
         "disable_file_logging": False,
         "disable_console_logging": False
     }
+}
+
+DEFAULT_GUILD_CONFIG = {
+    "nametags_channel_id": -1,
+    "commands_channel_id": -1
 }
