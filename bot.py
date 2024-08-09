@@ -1,13 +1,58 @@
 import discord
 import os
-import constants
 import logging
+import constants
 from logging.handlers import TimedRotatingFileHandler
 from dotenv import load_dotenv
 from configtools import read_config
 
-bot = discord.Bot()
+bot = discord.Bot(activity=discord.Game(name="/nametags help"))
 logger = logging.getLogger(__name__)
+
+# Main command group
+nametags = discord.SlashCommandGroup("nametags")
+
+# Help command
+@nametags.command(name="help", description="Provides information about this bot")
+async def help_(ctx: discord.ApplicationContext) -> None:
+    await ctx.respond("TODO: implement help")
+
+# Setup command
+@nametags.command(name="setup", description="Initial bot setup")
+@discord.option("nametags_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where nametags are to be posted")
+@discord.option("commands_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where bot commands are to be performed (leave blank for global)")
+async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str | None=None) -> None:
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.respond("Error: you must be an administrator to perform this command!")
+        return
+    
+    commands_channel_id = -1 if commands_channel_id is None else commands_channel_id
+
+    # Validate user input
+    try:
+        nci = int(nametags_channel_id)
+    except Exception:
+        await ctx.respond("Error: specified nametags_channel_id is invalid!")
+        return
+    
+    try:
+        cci = int(commands_channel_id)
+    except Exception:
+        await ctx.respond("Error: specified commands_channel_id is invalid!")
+
+    nc = ctx.author.guild.get_channel(nci)
+    cc = ctx.author.guild.get_channel(cci)
+    if nc is None:
+        await ctx.respond("Error: specified nametags_channel_id is not a valid channel!")
+        return
+    
+    if commands_channel_id != -1 and cc is None:
+        await ctx.respond("Error: specified commands_channel_id is not a valid channel!")
+        return
+    
+    # TODO: Save config data
+    
+    await ctx.respond(f"Set nametags channel to {nc.name} and commands channel to {"GLOBAL" if cc is None else cc.name}")
 
 @bot.event
 async def on_ready() -> None:
@@ -53,6 +98,9 @@ def main() -> None:
 
     load_configs()
     setup_logging()
+
+    # Add command group
+    bot.add_application_command(nametags)
 
     print("\nStarting", bot_config["bot"]["name"], "v" + bot_config["bot"]["version"])
     load_dotenv()
