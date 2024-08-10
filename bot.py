@@ -4,7 +4,7 @@ import logging
 import constants
 from logging.handlers import TimedRotatingFileHandler
 from dotenv import load_dotenv
-from configtools import read_config
+from configtools import read_config, write_config
 
 bot = discord.Bot(activity=discord.Game(name="/nametags help"))
 logger = logging.getLogger(__name__)
@@ -22,6 +22,8 @@ async def help_(ctx: discord.ApplicationContext) -> None:
 @discord.option("nametags_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where nametags are to be posted")
 @discord.option("commands_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where bot commands are to be performed (leave blank for global)")
 async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str | None=None) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
     if not ctx.author.guild_permissions.administrator:
         await ctx.respond("Error: you must be an administrator to perform this command!")
         return
@@ -50,9 +52,15 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
         await ctx.respond("Error: specified commands_channel_id is not a valid channel!")
         return
     
-    # TODO: Save config data
+    # Ensure guild folder exists
+    os.makedirs("guilds/" + str(nametags_channel.guild.id), exist_ok=True)
+
+    # Write config
+    write_config("guilds/" + str(nametags_channel.guild.id) + "/config.toml", {"nametags_channel_id": nametags_channel_id, "commands_channel_id": commands_channel_id}, logger=logger)
+
+    logger.info("Success: " + "guilds/" + str(nametags_channel.guild.id) + "/config.toml updated")
     
-    await ctx.respond(f"Set nametags channel to {nametags_channel.name} and commands channel to {"GLOBAL" if commands_channel_id is None else commands_channel.name}")
+    await ctx.respond(f"Set nametags channel to {nametags_channel.name} and commands channel to {"GLOBAL" if commands_channel is None else commands_channel.name}")
 
 @bot.event
 async def on_ready() -> None:

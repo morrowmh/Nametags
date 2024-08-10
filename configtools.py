@@ -26,3 +26,11 @@ def read_config(file: str, default_config: dict[str, Any], logger: Logger=None) 
         return default_config
     
     return config
+
+def write_config(file: str, config: dict[str, Any], logger: Logger=None) -> None:
+    try:
+        with open(file, "w") as config_file:
+            toml.dump(config, config_file)
+    except Exception as e:
+        exception(f"Could not write config data to {config_file}, aborting", e, logger=logger)
+        exit()
