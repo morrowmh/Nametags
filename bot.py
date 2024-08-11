@@ -51,34 +51,66 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
     if commands_channel_id != -1 and commands_channel is None:
         await ctx.respond("Error: specified commands_channel_id is not a valid channel!")
         return
-    
-    # Ensure guild folder exists
-    os.makedirs("guilds/" + str(nametags_channel.guild.id), exist_ok=True)
 
     # Write config
-    write_config("guilds/" + str(nametags_channel.guild.id) + "/config.toml", {"nametags_channel_id": nametags_channel_id, "commands_channel_id": commands_channel_id}, logger=logger)
+    guild_config = {"nametags_channel_id": nametags_channel_id, "commands_channel_id": commands_channel_id}
+    write_config("guilds/" + str(nametags_channel.guild.id) + "/config.toml", guild_config, logger=logger)
+
+    # Reload guild config
+    guild_configs[str(nametags_channel.guild.id)] = guild_config
 
     logger.info("Success: " + "guilds/" + str(nametags_channel.guild.id) + "/config.toml updated")
     
     await ctx.respond(f"Set nametags channel to {nametags_channel.name} and commands channel to {"GLOBAL" if commands_channel is None else commands_channel.name}")
 
+@nametags.command(name="currentconfig", description="Check bot configuration")
+async def status(ctx: discord.ApplicationContext) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.respond("Error: you must be an administrator to perform this command!")
+        return
+    
+    guild = str(ctx.author.guild.id)
+    await ctx.respond("nametags_channel_id=" + str(guild_configs[guild]["nametags_channel_id"]) + " AND commands_channel_id=" + str(guild_configs[guild]["commands_channel_id"]))
+
+@nametags.command(name="reloadconfig", description="Reload bot configuration")
+async def reloadconfig(ctx: discord.ApplicationContext) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    if not ctx.author.guild_permissions.administrator:
+        await ctx.respond("Error: you must be an administrator to perform this command!")
+        return
+    
+    guild_configs[str(ctx.guild.id)] = read_config("guilds/" + str(ctx.guild.id) + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
+
+    await ctx.respond("Success!")
+
+@bot.event
+async def on_guild_join(guild: discord.Guild) -> None:
+        # Ensure guild directory exists
+        os.makedirs("guilds/" + str(guild.id), exist_ok=True)
+
+        guild_configs[str(guild.id)] = read_config("guilds/" + str(guild.id) + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
+
+        logger.info("Joined guild " + str(guild.id))
+
 @bot.event
 async def on_ready() -> None:
-    logger.info(f"Ready! Logged in as {bot.user}")
-
-def load_configs() -> None:
-    global bot_config
-    bot_config = read_config("config.toml", constants.DEFAULT_BOT_CONFIG)
-
     global guild_configs
     guild_configs = {}
 
     # Ensure guilds directory exists
     os.makedirs("guilds", exist_ok=True)
 
-    # Load each guild config
-    for guild_dir in os.listdir("guilds"):
-        guild_configs[guild_dir] = read_config("guilds/" + guild_dir + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
+    # Load guild configs
+    for guild in bot.guilds:
+        # Ensure guild directory exists
+        os.makedirs("guilds/" + str(guild.id), exist_ok=True)
+
+        guild_configs[str(guild.id)] = read_config("guilds/" + str(guild.id) + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
+    
+    logger.info(f"Ready! Logged in as {bot.user}")
 
 def setup_logging() -> None:
     logger.setLevel(bot_config["logging"]["base_level"])
@@ -104,7 +136,9 @@ def setup_logging() -> None:
 def main() -> None:
     print("Initializing")
 
-    load_configs()
+    global bot_config
+    bot_config = read_config("config.toml", constants.DEFAULT_BOT_CONFIG)
+
     setup_logging()
 
     # Add command group
