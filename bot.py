@@ -17,10 +17,33 @@ nametags = discord.SlashCommandGroup("nametags")
 async def help_(ctx: discord.ApplicationContext) -> None:
     await ctx.respond("TODO: implement help")
 
+# Channel validator
+async def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str | None=None) -> tuple[discord.abc.GuildChannel, discord.abc.GuildChannel]:
+    commands_channel_id = -1 if commands_channel_id is None else commands_channel_id
+    try:
+        nametags_channel_id = int(nametags_channel_id)
+    except Exception:
+        raise Exception("Error: specified nametags_channel_id is not a valid integer!")
+    
+    try:
+        commands_channel_id = int(commands_channel_id)
+    except Exception:
+        raise Exception("Error: specified commands_channel_id is not a valid integer!")
+    
+    nametags_channel = ctx.author.guild.get_channel(nametags_channel_id)
+    commands_channel = ctx.author.guild.get_channel(commands_channel_id)
+    if nametags_channel is None:
+        raise Exception("Error: specified nametags_channel_id is not a valid channel!")
+    
+    if commands_channel_id != -1 and commands_channel is None:
+        raise Exception("Error: specified commands_channel_id is not a valid channel!")
+    
+    return nametags_channel, commands_channel
+
 # Setup command
 @nametags.command(name="setup", description="Initial bot setup")
 @discord.option("nametags_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where nametags are to be posted")
-@discord.option("commands_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where bot commands are to be performed (leave blank for global)")
+@discord.option("commands_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where bot commands are to be performed (blank or -1 for global)")
 async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str | None=None) -> None:
     logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
 
@@ -28,43 +51,23 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
         await ctx.respond("Error: you must be an administrator to perform this command!")
         return
     
-    commands_channel_id = -1 if commands_channel_id is None else commands_channel_id
-
-    # Validate user input
     try:
-        nametags_channel_id = int(nametags_channel_id)
-    except Exception:
-        await ctx.respond("Error: specified nametags_channel_id is invalid!")
-        return
-    
-    try:
-        commands_channel_id = int(commands_channel_id)
-    except Exception:
-        await ctx.respond("Error: specified commands_channel_id is invalid!")
-
-    nametags_channel = ctx.author.guild.get_channel(nametags_channel_id)
-    commands_channel = ctx.author.guild.get_channel(commands_channel_id)
-    if nametags_channel is None:
-        await ctx.respond("Error: specified nametags_channel_id is not a valid channel!")
-        return
-    
-    if commands_channel_id != -1 and commands_channel is None:
-        await ctx.respond("Error: specified commands_channel_id is not a valid channel!")
+        nametags_channel, commands_channel = await validate_channels(ctx, nametags_channel_id, commands_channel_id=commands_channel_id)
+    except Exception as e:
+        await ctx.respond(str(e))
         return
 
     # Write config
-    guild_config = {"nametags_channel_id": nametags_channel_id, "commands_channel_id": commands_channel_id}
+    guild_config = {"nametags_channel_id": nametags_channel.id, "commands_channel_id": -1 if commands_channel is None else commands_channel.id}
     write_config("guilds/" + str(nametags_channel.guild.id) + "/config.toml", guild_config, logger=logger)
-
-    # Reload guild config
     guild_configs[str(nametags_channel.guild.id)] = guild_config
 
     logger.info("Success: " + "guilds/" + str(nametags_channel.guild.id) + "/config.toml updated")
     
     await ctx.respond(f"Set nametags channel to {nametags_channel.name} and commands channel to {"GLOBAL" if commands_channel is None else commands_channel.name}")
 
-@nametags.command(name="currentconfig", description="Check bot configuration")
-async def status(ctx: discord.ApplicationContext) -> None:
+@nametags.command(name="showconfig", description="Check bot configuration")
+async def showconfig(ctx: discord.ApplicationContext) -> None:
     logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
 
     if not ctx.author.guild_permissions.administrator:
@@ -72,26 +75,16 @@ async def status(ctx: discord.ApplicationContext) -> None:
         return
     
     guild = str(ctx.author.guild.id)
-    await ctx.respond("nametags_channel_id=" + str(guild_configs[guild]["nametags_channel_id"]) + " AND commands_channel_id=" + str(guild_configs[guild]["commands_channel_id"]))
-
-@nametags.command(name="reloadconfig", description="Reload bot configuration")
-async def reloadconfig(ctx: discord.ApplicationContext) -> None:
-    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
-
-    if not ctx.author.guild_permissions.administrator:
-        await ctx.respond("Error: you must be an administrator to perform this command!")
-        return
-    
-    guild_configs[str(ctx.guild.id)] = read_config("guilds/" + str(ctx.guild.id) + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
-
-    await ctx.respond("Success!")
+    await ctx.respond("nametags_channel_id=" + str(guild_configs[guild]["nametags_channel_id"]) + " and commands_channel_id=" + str(guild_configs[guild]["commands_channel_id"]))
 
 @bot.event
 async def on_guild_join(guild: discord.Guild) -> None:
         # Ensure guild directory exists
         os.makedirs("guilds/" + str(guild.id), exist_ok=True)
 
-        guild_configs[str(guild.id)] = read_config("guilds/" + str(guild.id) + "/config.toml", constants.DEFAULT_GUILD_CONFIG)
+        # Write default config
+        write_config("guilds/" + str(guild.id) + "/config.toml", constants.DEFAULT_GUILD_CONFIG, logger=logger)
+        guild_configs[str(guild.id)] = constants.DEFAULT_GUILD_CONFIG
 
         logger.info("Joined guild " + str(guild.id))
 
