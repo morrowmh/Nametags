@@ -1,5 +1,7 @@
 import discord
 import os
+import sqlite3
+import sqltools
 import logging
 import constants
 from logging.handlers import TimedRotatingFileHandler
@@ -77,6 +79,23 @@ async def showconfig(ctx: discord.ApplicationContext) -> None:
     guild = str(ctx.author.guild.id)
     await ctx.respond("nametags_channel_id=" + str(guild_configs[guild]["nametags_channel_id"]) + " and commands_channel_id=" + str(guild_configs[guild]["commands_channel_id"]))
 
+# Create command
+@nametags.command(name="create", description="Create a new nametag")
+async def create(ctx: discord.ApplicationContext) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    # Check if nametag already exists
+    cur, con = sqltools.open_table(ctx)
+    if sqltools.nametag_exists(ctx, cur):
+        await ctx.respond("Error: you already have a nametag! Delete it with `/nametags delete` or update it with `/nametags update`")
+        con.close()
+        return
+    
+    cur.execute("INSERT INTO nametags VALUES(?,?,?)", (ctx.author.id, "test", "test"))
+    con.commit()
+    con.close()
+    await ctx.respond("Done!")
+
 @bot.event
 async def on_guild_join(guild: discord.Guild) -> None:
         # Ensure guild directory exists
@@ -92,9 +111,6 @@ async def on_guild_join(guild: discord.Guild) -> None:
 async def on_ready() -> None:
     global guild_configs
     guild_configs = {}
-
-    # Ensure guilds directory exists
-    os.makedirs("guilds", exist_ok=True)
 
     # Load guild configs
     for guild in bot.guilds:
