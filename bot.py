@@ -7,6 +7,7 @@ import constants
 from logging.handlers import TimedRotatingFileHandler
 from dotenv import load_dotenv
 from configtools import read_config, write_config
+from modal import NametagModal
 
 bot = discord.Bot(activity=discord.Game(name="/nametags help"))
 logger = logging.getLogger(__name__)
@@ -90,12 +91,39 @@ async def create(ctx: discord.ApplicationContext) -> None:
         await ctx.respond("Error: you already have a nametag! Delete it with `/nametags delete` or update it with `/nametags update`")
         con.close()
         return
-    
-    cur.execute("INSERT INTO nametags VALUES(?,?,?)", (ctx.author.id, "test", "test"))
-    con.commit()
     con.close()
-    await ctx.respond("Done!")
 
+    try:
+        modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, title="Introduce yourself!")
+    except Exception as e:
+        await ctx.respond(str(e))
+        return
+    
+    await ctx.send_modal(modal)
+    logger.info("Modal sent!")
+
+# Update command
+@nametags.command(name="update", description="Update your nametag")
+async def update(ctx: discord.ApplicationContext) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    # Check if nametag already exists
+    cur, con = sqltools.open_table(ctx)
+    if not sqltools.nametag_exists(ctx, cur):
+        await ctx.respond("Error: you don't have a nametag! Try `/nametags create`")
+        con.close()
+        return
+    con.close()
+
+    try:
+        modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, is_update=True, title="Introduce yourself!")
+    except Exception as e:
+        await ctx.respond(str(e))
+        return
+
+    await ctx.send_modal(modal)
+    logger.info("Modal sent!")
+    
 @bot.event
 async def on_guild_join(guild: discord.Guild) -> None:
         # Ensure guild directory exists
