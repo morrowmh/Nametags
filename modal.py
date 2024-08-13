@@ -36,13 +36,7 @@ class NametagModal(discord.ui.Modal):
             con.commit()
 
             # Attempt to delete old message
-            cur.execute("SELECT msgid FROM nametags WHERE userid=?", (self.ctx.author.id,))
-            old_id = cur.fetchone()
-            try:
-                msg = await self.ctx.channel.fetch_message(old_id[0])
-                await msg.delete()
-            except Exception:
-                self.logger.info(f"Old message with ID {old_id[0]} not found, skipping deleting")
+            await sqltools.delete_old_message(self.ctx, cur, self.logger)
         else:
             # Write to database
             cur.execute("INSERT INTO nametags(userid, name, age, location, bio) VALUES(?,?,?,?,?)", (

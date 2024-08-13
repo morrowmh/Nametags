@@ -110,6 +110,27 @@ async def create(ctx: discord.ApplicationContext) -> None:
     await ctx.send_modal(modal)
     logger.info("Modal sent!")
 
+# Delete command
+@nametags.command(name="delete", description="Delete your nametag")
+async def delete(ctx: discord.ApplicationContext) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    # Check if nametag exists
+    cur, con = sqltools.open_table(ctx)
+    if not sqltools.nametag_exists(ctx, cur):
+        await ctx.respond("Error: you don't have a nametag! Try `/nametags create`")
+        con.close()
+        return
+    
+    # Attempt to delete old message
+    await sqltools.delete_old_message(ctx, cur, logger)
+
+    # Delete nametag
+    sqltools.delete_nametag(ctx, cur, con)
+    con.close()
+
+    await ctx.respond("Done!")
+
 # Update command
 @nametags.command(name="update", description="Update your nametag")
 async def update(ctx: discord.ApplicationContext) -> None:
