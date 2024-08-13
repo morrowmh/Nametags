@@ -14,13 +14,8 @@ logger = logging.getLogger(__name__)
 # Main command group
 nametags = discord.SlashCommandGroup("nametags")
 
-# Help command
-@nametags.command(name="help", description="Provides information about this bot")
-async def help_(ctx: discord.ApplicationContext) -> None:
-    await ctx.respond("TODO: implement help")
-
 # Channel validator
-async def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str) -> tuple[discord.abc.GuildChannel, discord.abc.GuildChannel, int, int]:
+def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str) -> tuple[discord.abc.GuildChannel, discord.abc.GuildChannel, int, int]:
     try:
         nametags_channel_id = int(nametags_channel_id)
     except Exception:
@@ -41,6 +36,20 @@ async def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id
     
     return nametags_channel, commands_channel, nametags_channel_id, commands_channel_id
 
+# Check command location
+def is_in_commands_channel(ctx: discord.ApplicationContext) -> bool:
+    guild_config = guild_configs[str(ctx.guild.id)]
+    return True if guild_config["commands_channel_id"] == -1 or ctx.author.guild_permissions.administrator else ctx.channel.id == guild_config["commands_channel_id"]
+
+# Help command
+@nametags.command(name="help", description="Provides information about this bot")
+async def help_(ctx: discord.ApplicationContext) -> None:
+    if not is_in_commands_channel(ctx):
+        await ctx.respond("Error: you are not in the correct commands channel!")
+        return
+    
+    await ctx.respond("TODO: implement help")
+
 # Setup command
 @nametags.command(name="setup", description="Bot configuration setup")
 @discord.option("nametags_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where nametags are to be posted")
@@ -55,7 +64,7 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
         return
     
     try:
-        *_, nametags_channel_id, commands_channel_id = await validate_channels(ctx, nametags_channel_id, commands_channel_id)
+        *_, nametags_channel_id, commands_channel_id = validate_channels(ctx, nametags_channel_id, commands_channel_id)
     except Exception as e:
         await ctx.respond(str(e))
         return
@@ -84,6 +93,10 @@ async def showconfig(ctx: discord.ApplicationContext) -> None:
 async def create(ctx: discord.ApplicationContext) -> None:
     logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
 
+    if not is_in_commands_channel(ctx):
+        await ctx.respond("Error: you are not in the correct commands channel!")
+        return
+
     # Check if nametag already exists
     cur, con = sqltools.open_table(ctx)
     if sqltools.nametag_exists(ctx, cur):
@@ -101,6 +114,10 @@ async def create(ctx: discord.ApplicationContext) -> None:
 @nametags.command(name="update", description="Update your nametag")
 async def update(ctx: discord.ApplicationContext) -> None:
     logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    if not is_in_commands_channel(ctx):
+        await ctx.respond("Error: you are not in the correct commands channel!")
+        return
 
     # Check if nametag already exists
     cur, con = sqltools.open_table(ctx)
