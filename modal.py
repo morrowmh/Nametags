@@ -30,10 +30,7 @@ class NametagModal(discord.ui.Modal):
         if self.is_update:
             # Write to database
             cur.execute("UPDATE nametags SET name=?, age=?, location=?, bio=? WHERE userid=?", (
-                self.children[0].value,
-                self.children[1].value,
-                self.children[2].value,
-                self.children[3].value,
+                *[self.children[i].value for i in range(4)],
                 self.ctx.author.id
             ))
             con.commit()
@@ -50,10 +47,7 @@ class NametagModal(discord.ui.Modal):
             # Write to database
             cur.execute("INSERT INTO nametags(userid, name, age, location, bio) VALUES(?,?,?,?,?)", (
                 self.ctx.author.id,
-                self.children[0].value,
-                self.children[1].value,
-                self.children[2].value,
-                self.children[3].value
+                *[self.children[i].value for i in range(4)]
             ))
             con.commit()
 
