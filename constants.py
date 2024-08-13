@@ -14,5 +14,7 @@ DEFAULT_BOT_CONFIG = {
 
 DEFAULT_GUILD_CONFIG = {
     "nametags_channel_id": -1,
-    "commands_channel_id": -1
+    "commands_channel_id": -1,
+    "require_age": True,
+    "require_location": True
 }

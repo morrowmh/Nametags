@@ -10,8 +10,6 @@ class NametagModal(discord.ui.Modal):
         self.is_update = is_update
         self.logger = logger
 
-        # TODO: add config options for requiring age and location
-
         # Get prefills if update
         if self.is_update:
             cur, con = sqltools.open_table(ctx)
@@ -22,8 +20,8 @@ class NametagModal(discord.ui.Modal):
             prefill_name = prefill_age = prefill_location = prefill_bio = ""
 
         self.add_item(discord.ui.InputText(label="Name", value=prefill_name))
-        self.add_item(discord.ui.InputText(label="Age", value=prefill_age, required=False))
-        self.add_item(discord.ui.InputText(label="Location", value=prefill_location, required=False))
+        self.add_item(discord.ui.InputText(label="Age", value=prefill_age, required=guild_config["require_age"]))
+        self.add_item(discord.ui.InputText(label="Location", value=prefill_location, required=guild_config["require_location"]))
         self.add_item(discord.ui.InputText(label="Bio", value=prefill_bio, style=discord.InputTextStyle.long))
 
     async def callback(self, interaction: discord.Interaction) -> None:

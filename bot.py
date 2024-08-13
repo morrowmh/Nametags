@@ -1,6 +1,5 @@
 import discord
 import os
-import sqlite3
 import sqltools
 import logging
 import constants
@@ -21,8 +20,7 @@ async def help_(ctx: discord.ApplicationContext) -> None:
     await ctx.respond("TODO: implement help")
 
 # Channel validator
-async def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str | None=None) -> tuple[discord.abc.GuildChannel, discord.abc.GuildChannel]:
-    commands_channel_id = -1 if commands_channel_id is None else commands_channel_id
+async def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str) -> tuple[discord.abc.GuildChannel, discord.abc.GuildChannel, int, int]:
     try:
         nametags_channel_id = int(nametags_channel_id)
     except Exception:
@@ -41,13 +39,15 @@ async def validate_channels(ctx: discord.ApplicationContext, nametags_channel_id
     if commands_channel_id != -1 and commands_channel is None:
         raise Exception("Error: specified commands_channel_id is not a valid channel!")
     
-    return nametags_channel, commands_channel
+    return nametags_channel, commands_channel, nametags_channel_id, commands_channel_id
 
 # Setup command
-@nametags.command(name="setup", description="Initial bot setup")
+@nametags.command(name="setup", description="Bot configuration setup")
 @discord.option("nametags_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where nametags are to be posted")
-@discord.option("commands_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where bot commands are to be performed (blank or -1 for global)")
-async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str | None=None) -> None:
+@discord.option("commands_channel_id", type=discord.SlashCommandOptionType.string, description="The channel ID where bot commands are to be performed (default is global)")
+@discord.option("require_age", type=discord.SlashCommandOptionType.boolean, description="Whether age is required in nametags (default is True)")
+@discord.option("require_location", type=discord.SlashCommandOptionType.boolean, description="Whether location is required in nametags (default is True)")
+async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, commands_channel_id: str="-1", require_age: bool=True, require_location: bool=True) -> None:
     logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
 
     if not ctx.author.guild_permissions.administrator:
@@ -55,17 +55,17 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
         return
     
     try:
-        nametags_channel, commands_channel = await validate_channels(ctx, nametags_channel_id, commands_channel_id=commands_channel_id)
+        *_, nametags_channel_id, commands_channel_id = await validate_channels(ctx, nametags_channel_id, commands_channel_id)
     except Exception as e:
         await ctx.respond(str(e))
         return
 
     # Write config
-    guild_config = {"nametags_channel_id": nametags_channel.id, "commands_channel_id": -1 if commands_channel is None else commands_channel.id}
-    write_config("guilds/" + str(nametags_channel.guild.id) + "/config.toml", guild_config, logger=logger)
-    guild_configs[str(nametags_channel.guild.id)] = guild_config
+    guild_config = {"nametags_channel_id": nametags_channel_id, "commands_channel_id": commands_channel_id, "require_age": require_age, "require_location": require_location}
+    write_config("guilds/" + str(ctx.guild.id) + "/config.toml", guild_config, logger=logger)
+    guild_configs[str(ctx.guild.id)] = guild_config
 
-    logger.info("Success: " + "guilds/" + str(nametags_channel.guild.id) + "/config.toml updated")
+    logger.info("Success: " + "guilds/" + str(ctx.guild.id) + "/config.toml updated")
     
     await ctx.respond("Configuration successfully updated!")
 
