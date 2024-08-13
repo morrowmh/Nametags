@@ -13,7 +13,8 @@ def nametag_embed(bot: discord.Bot, user: discord.User | discord.Member, cur: sq
     bot_url = bot.user.avatar.url
 
     # Make embed
-    ret = discord.Embed(title=user.name, color=discord.Colour.magenta())
+    ret = discord.Embed(title=user.display_name, color=discord.Colour.magenta())
+    ret.set_author(name=user.name, icon_url=av_url)
     ret.add_field(name="Name", value=name, inline=False)
     ret.add_field(name="Age", value=age, inline=False)
     ret.add_field(name="Location", value=location, inline=False)

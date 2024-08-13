@@ -49,7 +49,28 @@ async def help_(ctx: discord.ApplicationContext) -> None:
         await ctx.respond("Error: you are not in the correct commands channel!")
         return
     
-    await ctx.respond("TODO: implement help")
+    # Get bot avatar url
+    av_url = bot.user.avatar.url
+
+    # Make help embed
+    help_embed = discord.Embed(title="Nametags Help", color=discord.Colour.magenta())
+    help_embed.set_thumbnail(url=av_url)
+    user_commands = """
+                    `/nametags help` :: Display this message
+                    `/nametags create` :: Create a new nametag
+                    `/nametags update` :: Update an existing nametag
+                    `/nametags view` :: View a user's nametag
+                    `/nametags delete` :: Delete your nametag
+                    """
+    help_embed.add_field(name="User commands", value=user_commands, inline=False)
+    admin_commands = """
+                     `/nametags setup` :: Configure the bot
+                     `/nametags showconfig` :: Display the current configuration
+                     """
+    help_embed.add_field(name="Admin commands", value=admin_commands, inline=False)
+    
+    await ctx.respond("", embed=help_embed)
+    logger.info("Success!")
 
 # Setup command
 @nametags.command(name="setup", description="Bot configuration setup")
@@ -132,8 +153,6 @@ async def delete(ctx: discord.ApplicationContext) -> None:
     
     # Attempt to delete old message
     channel = ctx.author.guild.get_channel(guild_configs[str(ctx.guild.id)]["nametags_channel_id"])
-    if channel is None:
-        await ctx.respond("Error: nametags channel not found! Have an admin use `/nametags setup`")
     await sqltools.delete_old_message(ctx, cur, channel, logger)
 
     # Delete nametag
