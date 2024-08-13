@@ -1,20 +1,29 @@
 import discord
 import sqltools
+import embed
 from logging import Logger
 
+class ChannelNotFoundException(Exception):
+    ...
+
 class NametagModal(discord.ui.Modal):
-    def __init__(self, ctx: discord.ApplicationContext, guild_config: dict, logger: Logger, *args, is_update: bool=False, **kwargs) -> None:
+    def __init__(self, ctx: discord.ApplicationContext, guild_config: dict, bot_config: dict, logger: Logger, *args, is_update: bool=False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.ctx = ctx
         self.guild_config = guild_config
+        self.bot_config = bot_config
         self.is_update = is_update
         self.logger = logger
+
+        channel = self.ctx.author.guild.get_channel(self.guild_config["nametags_channel_id"])
+        if channel is None:
+            raise ChannelNotFoundException("Error: nametags channel not found! Have an admin use `/nametags setup`")
+        self.channel = channel
 
         # Get prefills if update
         if self.is_update:
             cur, con = sqltools.open_table(ctx)
-            cur.execute("SELECT name, age, location, bio FROM nametags WHERE userid=?", (ctx.author.id,))
-            prefill_name, prefill_age, prefill_location, prefill_bio = cur.fetchone()
+            prefill_name, prefill_age, prefill_location, prefill_bio = sqltools.grab_nametag_data(ctx.author, cur)
             con.close()
         else:
             prefill_name = prefill_age = prefill_location = prefill_bio = ""
@@ -36,7 +45,7 @@ class NametagModal(discord.ui.Modal):
             con.commit()
 
             # Attempt to delete old message
-            await sqltools.delete_old_message(self.ctx, cur, self.logger)
+            await sqltools.delete_old_message(self.ctx, cur, self.channel, self.logger)
         else:
             # Write to database
             cur.execute("INSERT INTO nametags(userid, name, age, location, bio) VALUES(?,?,?,?,?)", (
@@ -44,13 +53,14 @@ class NametagModal(discord.ui.Modal):
                 *[self.children[i].value for i in range(4)]
             ))
             con.commit()
-
-        await interaction.response.send_message(f"Data: {self.children[0].value}, {self.children[1].value}, {self.children[2].value}, {self.children[3].value}")
-        send = await interaction.original_response()
+        
+        em = embed.nametag_embed(self.ctx.bot, self.ctx.author, cur, self.bot_config["bot"]["name"] + " v" + self.bot_config["bot"]["version"])
+        send = await self.channel.send("", embed=em)
 
         # Update msgid
         cur.execute("UPDATE nametags SET msgid=? WHERE userid=?", (send.id, self.ctx.author.id))
         con.commit()
 
         con.close()
+        await interaction.response.send_message("Success!")
         self.logger.info("Success!")

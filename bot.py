@@ -3,10 +3,11 @@ import os
 import sqltools
 import logging
 import constants
+import embed
+import modal
 from logging.handlers import TimedRotatingFileHandler
 from dotenv import load_dotenv
 from configtools import read_config, write_config
-from modal import NametagModal
 
 bot = discord.Bot(activity=discord.Game(name="/nametags help"))
 logger = logging.getLogger(__name__)
@@ -104,9 +105,17 @@ async def create(ctx: discord.ApplicationContext) -> None:
         return
     con.close()
 
-    modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, title="Introduce yourself!")
+    try:
+        mod = modal.NametagModal(ctx, guild_configs[str(ctx.guild.id)], bot_config, logger, title="Introduce yourself!")
+    except modal.ChannelNotFoundException as e:
+        await ctx.respond(str(e))
+        return
+    except Exception:
+        await ctx.respond("Fatal error, check with an admin")
+        logger.exception("")
+        return
     
-    await ctx.send_modal(modal)
+    await ctx.send_modal(mod)
     logger.info("Modal sent!")
 
 # Delete command
@@ -122,7 +131,10 @@ async def delete(ctx: discord.ApplicationContext) -> None:
         return
     
     # Attempt to delete old message
-    await sqltools.delete_old_message(ctx, cur, logger)
+    channel = ctx.author.guild.get_channel(guild_configs[str(ctx.guild.id)]["nametags_channel_id"])
+    if channel is None:
+        await ctx.respond("Error: nametags channel not found! Have an admin use `/nametags setup`")
+    await sqltools.delete_old_message(ctx, cur, channel, logger)
 
     # Delete nametag
     sqltools.delete_nametag(ctx, cur, con)
@@ -148,14 +160,29 @@ async def update(ctx: discord.ApplicationContext) -> None:
         return
     con.close()
 
-    modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, is_update=True, title="Introduce yourself!")
+    try:
+        mod = modal.NametagModal(ctx, guild_configs[str(ctx.guild.id)], bot_config, logger, is_update=True, title="Introduce yourself!")
+    except modal.ChannelNotFoundException as e:
+        await ctx.respond(str(e))
+        return
+    except Exception:
+        await ctx.respond("Fatal error, check with an admin")
+        logger.exception("")
+        return
 
-    await ctx.send_modal(modal)
+    await ctx.send_modal(mod)
     logger.info("Modal sent!")
 
+# View command
 @nametags.command(name="view", description="View a nametag")
 @discord.option("user", type=discord.SlashCommandOptionType.user, description="User whose nametag should be viewed (default is self)")
 async def view(ctx: discord.ApplicationContext, user: discord.User | discord.Member=None) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
+
+    if not is_in_commands_channel(ctx):
+        await ctx.respond("Error: you are not in the correct commands channel!")
+        return
+
     user = ctx.author if user is None else user
 
     # Check if nametag exists
@@ -164,9 +191,10 @@ async def view(ctx: discord.ApplicationContext, user: discord.User | discord.Mem
         await ctx.respond("Error: you don't have a nametag! Try `/nametags create`") if user == ctx.author else await ctx.respond(f"Error: user {user.name} doesn't have a nametag!")
         con.close()
         return
-    con.close()
 
-    await ctx.respond("view")
+    await ctx.respond("", embed = embed.nametag_embed(bot, user, cur, bot_config["bot"]["name"] + " v" + bot_config["bot"]["version"]))
+    con.close()
+    logger.info("Success!")
     
 @bot.event
 async def on_guild_join(guild: discord.Guild) -> None:
