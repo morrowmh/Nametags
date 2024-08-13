@@ -67,7 +67,7 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
 
     logger.info("Success: " + "guilds/" + str(nametags_channel.guild.id) + "/config.toml updated")
     
-    await ctx.respond(f"Set nametags channel to {nametags_channel.name} and commands channel to {"GLOBAL" if commands_channel is None else commands_channel.name}")
+    await ctx.respond("Configuration successfully updated!")
 
 @nametags.command(name="showconfig", description="Check bot configuration")
 async def showconfig(ctx: discord.ApplicationContext) -> None:
@@ -77,8 +77,7 @@ async def showconfig(ctx: discord.ApplicationContext) -> None:
         await ctx.respond("Error: you must be an administrator to perform this command!")
         return
     
-    guild = str(ctx.author.guild.id)
-    await ctx.respond("nametags_channel_id=" + str(guild_configs[guild]["nametags_channel_id"]) + " and commands_channel_id=" + str(guild_configs[guild]["commands_channel_id"]))
+    await ctx.respond(guild_configs[str(ctx.author.guild.id)])
 
 # Create command
 @nametags.command(name="create", description="Create a new nametag")
@@ -93,11 +92,7 @@ async def create(ctx: discord.ApplicationContext) -> None:
         return
     con.close()
 
-    try:
-        modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, title="Introduce yourself!")
-    except Exception as e:
-        await ctx.respond(str(e))
-        return
+    modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, title="Introduce yourself!")
     
     await ctx.send_modal(modal)
     logger.info("Modal sent!")
@@ -115,11 +110,7 @@ async def update(ctx: discord.ApplicationContext) -> None:
         return
     con.close()
 
-    try:
-        modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, is_update=True, title="Introduce yourself!")
-    except Exception as e:
-        await ctx.respond(str(e))
-        return
+    modal = NametagModal(ctx, guild_configs[str(ctx.guild.id)], logger, is_update=True, title="Introduce yourself!")
 
     await ctx.send_modal(modal)
     logger.info("Modal sent!")

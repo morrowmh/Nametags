@@ -16,12 +16,8 @@ class NametagModal(discord.ui.Modal):
         if self.is_update:
             cur, con = sqltools.open_table(ctx)
             cur.execute("SELECT name, age, location, bio FROM nametags WHERE userid=?", (ctx.author.id,))
-            if (res := cur.fetchone()) is not None:
-                prefill_name, prefill_age, prefill_location, prefill_bio = res
-                con.close()
-            else:
-                con.close()
-                raise Exception("Error: no data to update, try using `/nametags create`")
+            prefill_name, prefill_age, prefill_location, prefill_bio = cur.fetchone()
+            con.close()
         else:
             prefill_name = prefill_age = prefill_location = prefill_bio = ""
 
@@ -46,12 +42,12 @@ class NametagModal(discord.ui.Modal):
 
             # Attempt to delete old message
             cur.execute("SELECT msgid FROM nametags WHERE userid=?", (self.ctx.author.id,))
-            if (old_id := cur.fetchone()) is not None:
-                try:
-                    msg = await self.ctx.channel.fetch_message(old_id[0])
-                    await msg.delete()
-                except Exception:
-                    self.logger.info(f"Old message with ID {old_id[0]} not found, skipping deleting")
+            old_id = cur.fetchone()
+            try:
+                msg = await self.ctx.channel.fetch_message(old_id[0])
+                await msg.delete()
+            except Exception:
+                self.logger.info(f"Old message with ID {old_id[0]} not found, skipping deleting")
         else:
             # Write to database
             cur.execute("INSERT INTO nametags(userid, name, age, location, bio) VALUES(?,?,?,?,?)", (
