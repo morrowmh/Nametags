@@ -75,7 +75,6 @@ async def setup(ctx: discord.ApplicationContext, nametags_channel_id: str, comma
     guild_configs[str(ctx.guild.id)] = guild_config
 
     logger.info("Success: " + "guilds/" + str(ctx.guild.id) + "/config.toml updated")
-    
     await ctx.respond("Configuration successfully updated!")
 
 @nametags.command(name="showconfig", description="Check bot configuration")
@@ -99,7 +98,7 @@ async def create(ctx: discord.ApplicationContext) -> None:
 
     # Check if nametag already exists
     cur, con = sqltools.open_table(ctx)
-    if sqltools.nametag_exists(ctx, cur):
+    if sqltools.nametag_exists(ctx.author, cur):
         await ctx.respond("Error: you already have a nametag! Delete it with `/nametags delete` or update it with `/nametags update`")
         con.close()
         return
@@ -117,7 +116,7 @@ async def delete(ctx: discord.ApplicationContext) -> None:
 
     # Check if nametag exists
     cur, con = sqltools.open_table(ctx)
-    if not sqltools.nametag_exists(ctx, cur):
+    if not sqltools.nametag_exists(ctx.author, cur):
         await ctx.respond("Error: you don't have a nametag! Try `/nametags create`")
         con.close()
         return
@@ -130,6 +129,7 @@ async def delete(ctx: discord.ApplicationContext) -> None:
     con.close()
 
     await ctx.respond("Done!")
+    logger.info("Success!")
 
 # Update command
 @nametags.command(name="update", description="Update your nametag")
@@ -142,7 +142,7 @@ async def update(ctx: discord.ApplicationContext) -> None:
 
     # Check if nametag already exists
     cur, con = sqltools.open_table(ctx)
-    if not sqltools.nametag_exists(ctx, cur):
+    if not sqltools.nametag_exists(ctx.author, cur):
         await ctx.respond("Error: you don't have a nametag! Try `/nametags create`")
         con.close()
         return
@@ -152,6 +152,21 @@ async def update(ctx: discord.ApplicationContext) -> None:
 
     await ctx.send_modal(modal)
     logger.info("Modal sent!")
+
+@nametags.command(name="view", description="View a nametag")
+@discord.option("user", type=discord.SlashCommandOptionType.user, description="User whose nametag should be viewed (default is self)")
+async def view(ctx: discord.ApplicationContext, user: discord.User | discord.Member=None) -> None:
+    user = ctx.author if user is None else user
+
+    # Check if nametag exists
+    cur, con = sqltools.open_table(ctx)
+    if not sqltools.nametag_exists(user, cur):
+        await ctx.respond("Error: you don't have a nametag! Try `/nametags create`") if user == ctx.author else await ctx.respond(f"Error: user {user.name} doesn't have a nametag!")
+        con.close()
+        return
+    con.close()
+
+    await ctx.respond("view")
     
 @bot.event
 async def on_guild_join(guild: discord.Guild) -> None:

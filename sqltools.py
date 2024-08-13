@@ -15,8 +15,8 @@ def open_table(ctx: discord.ApplicationContext) -> tuple[sqlite3.Cursor, sqlite3
     con.commit()
     return cur, con
 
-def nametag_exists(ctx: discord.ApplicationContext, cur: sqlite3.Cursor) -> bool:
-    res = cur.execute("SELECT userid FROM nametags WHERE userid=?", (ctx.author.id,))
+def nametag_exists(user: discord.User | discord.Member, cur: sqlite3.Cursor) -> bool:
+    res = cur.execute("SELECT userid FROM nametags WHERE userid=?", (user.id,))
     return res.fetchone() is not None
 
 def delete_nametag(ctx: discord.ApplicationContext, cur: sqlite3.Cursor, con: sqlite3.Connection) -> None:
