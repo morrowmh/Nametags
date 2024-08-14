@@ -47,7 +47,24 @@ python bot.py
 
 `/nametags delete`: Delete your nametag if it exists.
 
-## Admin Commands
+### Admin Commands
 `/nametags setup`: Setup the bot for your server. You must specify the `nametags_channel_id` for the channel in which nametags will be posted. You may also specify a `commands_channel_id` if you want to restrict bot commands to a certain channel. Leaving this option blank will result in "global" behavior, meaning bot commands can be ran from any channel. There are also optional arguments `require_age` and `require_location` which are booleans that determine whether age or location should be required when making a nametag.
 
 `/nametags showconfig`: Display the current configuration for the server.
+
+### Bot Config
+The configuration file for this bot is `config.toml`.
+
+`bot.name`: The name of the bot.
+
+`bot.version`: The version of the bot.
+
+`bot.bio_placeholder`: Placeholder text for the bio field in the nametag modal dialogs.
+
+`logging.base_level`: The loglevel at which logger messages actually start appearing.
+
+`logging.logfile_backup_count`: The number of logfiles to archive before deleting old ones when using file logging.
+
+`logging.disable_file_logging`: Whether to use file logging.
+
+`logging.disable_console_logging`: Whether to use console logging.

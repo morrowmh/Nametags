@@ -31,7 +31,7 @@ class NametagModal(discord.ui.Modal):
         self.add_item(discord.ui.InputText(label="Name", value=prefill_name))
         self.add_item(discord.ui.InputText(label="Age", value=prefill_age, required=guild_config["require_age"]))
         self.add_item(discord.ui.InputText(label="Location", value=prefill_location, required=guild_config["require_location"]))
-        self.add_item(discord.ui.InputText(label="Bio", value=prefill_bio, style=discord.InputTextStyle.long))
+        self.add_item(discord.ui.InputText(label="Bio", value=prefill_bio, style=discord.InputTextStyle.long, placeholder=bot_config["bot"]["bio_placeholder"]))
 
     async def callback(self, interaction: discord.Interaction) -> None:
         cur, con = sqltools.open_table(self.ctx)

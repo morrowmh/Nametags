@@ -1,6 +1,9 @@
 [bot]
 name = "Nametags Discord Bot"
-version = "1.0.0"
+version = "1.0.1"
+bio_placeholder = """
+Likes, dislikes, hobbies, etc.
+"""
 
 [logging]
 base_level = "INFO"
