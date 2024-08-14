@@ -1,7 +1,7 @@
 # Nametags
 A Discord bot written in Python for managing user introductions
 ## Installation
-For this installation example we'll assume we're using [Ubuntu 20.04.6 LTS](https://www.releases.ubuntu.com/focal/).
+For this installation example, we'll assume we're using [Ubuntu 20.04.6 LTS](https://www.releases.ubuntu.com/focal/).
 
 First of all, make sure you have [Python 3.12](https://linuxcapable.com/install-python-3-12-on-ubuntu-linux/) as well as [pip](https://stackoverflow.com/questions/6587507/how-to-install-pip-with-python-3).
 
