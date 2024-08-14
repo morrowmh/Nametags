@@ -65,6 +65,6 @@ The configuration file for this bot is `config.toml`.
 
 `logging.logfile_backup_count`: The number of logfiles to archive before deleting old ones when using file logging.
 
-`logging.disable_file_logging`: Whether to use file logging.
+`logging.disable_file_logging`: Whether to use file logging. Logfiles are rotated daily.
 
 `logging.disable_console_logging`: Whether to use console logging.
