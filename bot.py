@@ -45,6 +45,7 @@ def is_in_commands_channel(ctx: discord.ApplicationContext) -> bool:
 # Help command
 @nametags.command(name="help", description="Provides information about this bot")
 async def help_(ctx: discord.ApplicationContext) -> None:
+    logger.info("Command: " + str(ctx.command) + " from user " + str(ctx.author) + " in guild " + str(ctx.author.guild.id))
     if not is_in_commands_channel(ctx):
         await ctx.respond("Error: you are not in the correct commands channel!")
         return
