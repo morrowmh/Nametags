@@ -24,7 +24,7 @@ cd Nametags
 pip install -r requirements.txt
 ```
 
-Finally, add your bot token to the `.env` file:
+Finally, add your bot token to the `.env` file (without parentheses):
 ```bash
 echo TOKEN=(your bot token) > .env
 ```
